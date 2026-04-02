@@ -1,0 +1,30 @@
+name: Fix Commit Messages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fix commit messages
+        run: |
+          git filter-branch -f --msg-filter 'commit_msg=$(cat);
+            commit_msg=$(echo "$commit_msg" | sed "s/ add / /g");
+            commit_msg=$(echo "$commit_msg" | sed "s/^add //");
+            echo "$commit_msg"' HEAD || true
+
+      - name: Force push if changed
+        run: |
+          if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+            git push --force origin main
+          fi
