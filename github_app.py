@@ -235,6 +235,44 @@ def index() -> Any:
         return "GitHub App for fixing commit messages is running"
 
 
+@app.route("/images/<path:filename>")
+def serve_image(filename: str) -> Any:
+    """Serve images from docs/images directory."""
+    try:
+        from pathlib import Path
+
+        img_path = Path(f"docs/images/{filename}")
+        if img_path.exists():
+            content = img_path.read_bytes()
+            ext = filename.split(".")[-1]
+            mime = {
+                "png": "image/png",
+                "jpg": "image/jpeg",
+                "jpeg": "image/jpeg",
+                "gif": "image/gif",
+                "svg": "image/svg+xml",
+            }.get(ext, "image/png")
+            return content, 200, {"Content-Type": mime}
+    except Exception as e:
+        logger.warning(f"Failed to serve image {filename}: {e}")
+    return "Not found", 404
+
+
+@app.route("/app-screenshot.png")
+def serve_screenshot() -> Any:
+    """Serve the screenshot image."""
+    try:
+        from pathlib import Path
+
+        img_path = Path("docs/images/app-screenshot.png")
+        if img_path.exists():
+            content = img_path.read_bytes()
+            return content, 200, {"Content-Type": "image/png"}
+    except Exception as e:
+        logger.warning(f"Failed to serve screenshot: {e}")
+    return "Not found", 404
+
+
 @app.route("/stats")
 def stats() -> tuple[Any, int]:
     """Return push statistics."""
