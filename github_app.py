@@ -34,13 +34,17 @@ def save_stats(stats: dict[str, Any]) -> None:
     Path(STATS_FILE).write_text(json.dumps(stats, indent=2))
 
 
-def increment_stats(repo_name: str) -> None:
+def increment_stats(repo_name: str, *, skipped: bool = False) -> None:
     """Increment push count for a repository."""
     stats = load_stats()
     stats["total_pushes"] = stats.get("total_pushes", 0) + 1
     if repo_name not in stats["repos"]:
-        stats["repos"][repo_name] = {"pushes": 0}
+        stats["repos"][repo_name] = {"pushes": 0, "skipped": 0}
     stats["repos"][repo_name]["pushes"] = stats["repos"][repo_name].get("pushes", 0) + 1
+    if skipped:
+        stats["repos"][repo_name]["skipped"] = (
+            stats["repos"][repo_name].get("skipped", 0) + 1
+        )
     save_stats(stats)
 
 
@@ -154,6 +158,10 @@ def handle_push() -> tuple[Any, int]:
     # Skip if push is from a bot (e.g., this app itself) to prevent loops
     sender = data.get("sender", {})
     if sender.get("type") == "Bot":
+        repo = data.get("repository", {})
+        repo_name = repo.get("full_name", "")
+        if repo_name:
+            increment_stats(repo_name, skipped=True)
         logger.info("Skipped push from bot to prevent loops")
         return jsonify({"status": "Skipped bot push"}), 200
 
@@ -181,6 +189,10 @@ def handle_push() -> tuple[Any, int]:
 
     # Extract repo name for stats
     repo_name = repo.get("full_name", "")
+
+    # Increment stats for all pushes (including bot pushes)
+    if repo_name:
+        increment_stats(repo_name)
 
     # Fix commit messages
     success = fix_commit_messages(repo_url, token, branch)
