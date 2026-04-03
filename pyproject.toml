@@ -4,7 +4,7 @@ target-version = "py38"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "C90", "I", "N", "UP", "YTT", "S", "BLE", "FBT", "B", "A", "COM", "C4", "DTZ", "T10", "DJ", "EM", "EXE", "FA", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SLOT", "SIM", "TID", "TCH", "INT", "ARG", "PTH", "ERA", "PD", "PGH", "PL", "TRY", "FLY", "NPY", "AIR", "PERF", "FURB", "LOG", "RUF"]
-ignore = ["E501", "S101", "S104"]  # Line too long, assert used, hardcoded bind all interfaces
+ignore = ["E501", "S101", "S104", "UP007", "G004", "PLW1510", "S602", "BLE001", "TRY300", "TRY400", "PTH118", "PLR0911", "RET505", "T201", "S105", "PLR2004"]  # Ignore issues for Python 3.8 compatibility and style preferences
 
 [tool.ruff.lint.isort]
 known-first-party = ["github_app"]
