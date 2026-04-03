@@ -264,7 +264,7 @@ def serve_screenshot() -> Any:
     try:
         from pathlib import Path
 
-        img_path = Path("docs/images/app-screenshot.png")
+        img_path = Path("docs/app-screenshot.png")
         if img_path.exists():
             content = img_path.read_bytes()
             return content, 200, {"Content-Type": "image/png"}
