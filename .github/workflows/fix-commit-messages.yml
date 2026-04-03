@@ -1,30 +1,34 @@
-name: Fix Commit Messages
+name: CI
 
 on:
   push:
     branches:
       - main
-
-permissions:
-  contents: write
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  fix:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          fetch-depth: 0
+          python-version: '3.8'
 
-      - name: Fix commit messages
+      - name: Install dependencies
         run: |
-          git filter-branch -f --msg-filter 'commit_msg=$(cat);
-            commit_msg=$(echo "$commit_msg" | sed "s/ add / /g");
-            commit_msg=$(echo "$commit_msg" | sed "s/^add //");
-            echo "$commit_msg"' HEAD || true
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Force push if changed
-        run: |
-          if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
-            git push --force origin main
-          fi
+      - name: Run linting with ruff
+        run: ruff check .
+
+      - name: Run type checking with mypy
+        run: mypy github_app.py
+
+      - name: Run tests
+        run: pytest tests/
