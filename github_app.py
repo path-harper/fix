@@ -8,7 +8,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import Optional
+from typing import Any, Optional
 
 from flask import Flask, jsonify, request
 from flask_limiter import Limiter
@@ -63,8 +63,8 @@ def get_installation_token(installation_id: int) -> Optional[str]:
     """Get an installation access token for the given installation."""
     try:
         integration = GithubIntegration(APP_ID, PRIVATE_KEY)
-        token = integration.get_access_token(installation_id)
-        return token.token
+        auth = integration.get_access_token(installation_id)
+        return str(auth.token)
     except Exception as e:
         logger.error(f"Error getting installation token for {installation_id}: {e}")
         return None
@@ -116,7 +116,7 @@ echo "$commit_msg"
 
 @app.route("/webhook", methods=["POST"])
 @limiter.limit("10 per minute")
-def handle_push():
+def handle_push() -> tuple[Any, int]:
     """Handle push webhook."""
     data = request.json
     if data is None:
