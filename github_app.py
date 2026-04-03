@@ -92,7 +92,9 @@ def fix_commit_messages(repo_url: str, token: str, branch: str) -> bool:
         filter_cmd = """
 commit_msg=$(cat);
 commit_msg=$(echo "$commit_msg" | sed "s/ add / /g");
+commit_msg=$(echo "$commit_msg" | sed "s/ Add / /g");
 commit_msg=$(echo "$commit_msg" | sed "s/^add //");
+commit_msg=$(echo "$commit_msg" | sed "s/^Add //");
 echo "$commit_msg"
 """
         cmd = f"git filter-branch -f --msg-filter '{filter_cmd}' {branch}"
