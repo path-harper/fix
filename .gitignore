@@ -53,3 +53,4 @@ venv/
 # OS
 .DS_Store
 fixing-commits.*.pem
+test-repo/
