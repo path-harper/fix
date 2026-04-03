@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from github_app import app, fix_commit_messages, get_installation_token, run_command
@@ -5,7 +8,7 @@ from github_app import app, fix_commit_messages, get_installation_token, run_com
 
 class TestRunCommand:
     @patch("subprocess.run")
-    def test_run_command_success(self, mock_run):
+    def test_run_command_success(self, mock_run: MagicMock) -> None:
         mock_run.return_value = MagicMock(
             returncode=0,
             stdout="success output",
@@ -18,7 +21,7 @@ class TestRunCommand:
         mock_run.assert_called_once()
 
     @patch("subprocess.run")
-    def test_run_command_failure(self, mock_run):
+    def test_run_command_failure(self, mock_run: MagicMock) -> None:
         mock_run.return_value = MagicMock(
             returncode=1,
             stdout="",
@@ -30,7 +33,7 @@ class TestRunCommand:
         assert stderr == "command failed"
 
     @patch("subprocess.run")
-    def test_run_command_exception(self, mock_run):
+    def test_run_command_exception(self, mock_run: MagicMock) -> None:
         mock_run.side_effect = Exception("subprocess error")
         ret, stdout, stderr = run_command("echo hello")
         assert ret == 1
@@ -40,13 +43,13 @@ class TestRunCommand:
 
 class TestGetInstallationToken:
     @patch("github_app.GithubIntegration")
-    def test_get_installation_token_success(self, mock_integration):
+    def test_get_installation_token_success(self, mock_integration: MagicMock) -> None:
         mock_integration.return_value.get_access_token.return_value.token = "test_token"
         token = get_installation_token(123)
         assert token == "test_token"
 
     @patch("github_app.GithubIntegration")
-    def test_get_installation_token_failure(self, mock_integration):
+    def test_get_installation_token_failure(self, mock_integration: MagicMock) -> None:
         mock_integration.return_value.get_access_token.side_effect = Exception(
             "API error",
         )
@@ -56,8 +59,7 @@ class TestGetInstallationToken:
 
 class TestFixCommitMessages:
     @patch("github_app.run_command")
-    def test_fix_commit_messages_success(self, mock_run):
-        # Mock all commands to succeed
+    def test_fix_commit_messages_success(self, mock_run: MagicMock) -> None:
         mock_run.side_effect = [
             (0, "", ""),  # clone
             (0, "", ""),  # checkout
@@ -73,7 +75,7 @@ class TestFixCommitMessages:
         assert mock_run.call_count == 4
 
     @patch("github_app.run_command")
-    def test_fix_commit_messages_clone_failure(self, mock_run):
+    def test_fix_commit_messages_clone_failure(self, mock_run: MagicMock) -> None:
         mock_run.return_value = (1, "", "clone failed")
         success = fix_commit_messages(
             "https://github.com/user/repo.git",
@@ -83,7 +85,7 @@ class TestFixCommitMessages:
         assert success is False
 
     @patch("github_app.run_command")
-    def test_fix_commit_messages_push_failure(self, mock_run):
+    def test_fix_commit_messages_push_failure(self, mock_run: MagicMock) -> None:
         mock_run.side_effect = [
             (0, "", ""),  # clone
             (0, "", ""),  # checkout
@@ -99,9 +101,9 @@ class TestFixCommitMessages:
 
 
 class TestWebhook:
-    def test_handle_push_bot_skip(self):
+    def test_handle_push_bot_skip(self) -> None:
         with app.test_client() as client:
-            data = {
+            data: dict[str, Any] = {
                 "sender": {"type": "Bot"},
                 "repository": {"clone_url": "https://github.com/user/repo.git"},
                 "ref": "refs/heads/main",
@@ -113,7 +115,11 @@ class TestWebhook:
 
     @patch("github_app.get_installation_token")
     @patch("github_app.fix_commit_messages")
-    def test_handle_push_success(self, mock_fix, mock_token):
+    def test_handle_push_success(
+        self,
+        mock_fix: MagicMock,
+        mock_token: MagicMock,
+    ) -> None:
         mock_token.return_value = "token"
         mock_fix.return_value = True
         with app.test_client() as client:
@@ -127,15 +133,15 @@ class TestWebhook:
             assert response.status_code == 200
             assert b"Commit messages fixed" in response.data
 
-    def test_handle_push_missing_data(self):
+    def test_handle_push_missing_data(self) -> None:
         with app.test_client() as client:
-            data = {}
+            data: dict[str, Any] = {}
             response = client.post("/webhook", json=data)
             assert response.status_code == 400
             assert b"Missing required data" in response.data
 
     @patch("github_app.get_installation_token")
-    def test_handle_push_token_failure(self, mock_token):
+    def test_handle_push_token_failure(self, mock_token: MagicMock) -> None:
         mock_token.return_value = None
         with app.test_client() as client:
             data = {
@@ -150,7 +156,11 @@ class TestWebhook:
 
     @patch("github_app.get_installation_token")
     @patch("github_app.fix_commit_messages")
-    def test_handle_push_fix_failure(self, mock_fix, mock_token):
+    def test_handle_push_fix_failure(
+        self,
+        mock_fix: MagicMock,
+        mock_token: MagicMock,
+    ) -> None:
         mock_token.return_value = "token"
         mock_fix.return_value = False
         with app.test_client() as client:
