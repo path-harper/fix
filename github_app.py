@@ -12,26 +12,43 @@ import tempfile
 from pathlib import Path
 from typing import Any, Optional, Union
 
+import redis
 from flask import Flask, jsonify, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from github import GithubIntegration
 from github_webhook import Webhook
 
-STATS_FILE = os.getenv("STATS_FILE", "stats.json")
+REDIS_URL = os.getenv("REDIS_URL")
+STATS_KEY = "fix:stats"
 
 
 def load_stats() -> Union[dict[str, Any], Any]:
-    """Load stats from file."""
+    """Load stats from Redis or file."""
+    if REDIS_URL:
+        try:
+            r = redis.from_url(REDIS_URL)
+            data = r.get(STATS_KEY)
+            if data:
+                return json.loads(data)
+        except Exception as e:
+            logger.warning(f"Failed to load stats from Redis: {e}")
     try:
-        return json.loads(Path(STATS_FILE).read_text())
+        return json.loads(Path("stats.json").read_text())
     except (FileNotFoundError, json.JSONDecodeError):
         return {"total_pushes": 0, "repos": {}}
 
 
 def save_stats(stats: dict[str, Any]) -> None:
-    """Save stats to file."""
-    Path(STATS_FILE).write_text(json.dumps(stats, indent=2))
+    """Save stats to Redis and file."""
+    data = json.dumps(stats, indent=2)
+    if REDIS_URL:
+        try:
+            r = redis.from_url(REDIS_URL)
+            r.set(STATS_KEY, data)
+        except Exception as e:
+            logger.warning(f"Failed to save stats to Redis: {e}")
+    Path("stats.json").write_text(data)
 
 
 def increment_stats(repo_name: str, *, skipped: bool = False) -> None:
