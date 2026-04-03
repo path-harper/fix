@@ -8,7 +8,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import Optional, Tuple
+from typing import Optional
 
 from flask import Flask, jsonify, request
 from flask_limiter import Limiter
@@ -43,7 +43,7 @@ def run_command(
     cmd: str,
     cwd: Optional[str] = None,
     env: Optional[dict] = None,
-) -> Tuple[int, str, str]:
+) -> tuple[int, str, str]:
     """Run a shell command."""
     try:
         result = subprocess.run(
@@ -167,7 +167,7 @@ def index() -> str:
 if __name__ == "__main__":
     if not all([APP_ID, PRIVATE_KEY, WEBHOOK_SECRET]):
         print(
-            "Error: Missing environment variables. Set GITHUB_APP_ID, GITHUB_PRIVATE_KEY, GITHUB_WEBHOOK_SECRET"
+            "Error: Missing environment variables. Set GITHUB_APP_ID, GITHUB_PRIVATE_KEY, GITHUB_WEBHOOK_SECRET",
         )
         sys.exit(1)
     app.run(host="0.0.0.0", port=5000)

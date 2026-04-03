@@ -65,7 +65,9 @@ class TestFixCommitMessages:
             (0, "", ""),  # push
         ]
         success = fix_commit_messages(
-            "https://github.com/user/repo.git", "token", "main"
+            "https://github.com/user/repo.git",
+            "token",
+            "main",
         )
         assert success is True
         assert mock_run.call_count == 4
@@ -74,7 +76,9 @@ class TestFixCommitMessages:
     def test_fix_commit_messages_clone_failure(self, mock_run):
         mock_run.return_value = (1, "", "clone failed")
         success = fix_commit_messages(
-            "https://github.com/user/repo.git", "token", "main"
+            "https://github.com/user/repo.git",
+            "token",
+            "main",
         )
         assert success is False
 
@@ -87,7 +91,9 @@ class TestFixCommitMessages:
             (1, "", "push failed"),  # push
         ]
         success = fix_commit_messages(
-            "https://github.com/user/repo.git", "token", "main"
+            "https://github.com/user/repo.git",
+            "token",
+            "main",
         )
         assert success is False
 
