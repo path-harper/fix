@@ -224,8 +224,15 @@ def handle_push() -> tuple[Any, int]:
 
 
 @app.route("/")
-def index() -> str:
-    return "GitHub App for fixing commit messages is running"
+def index() -> Any:
+    """Serve the index.html page."""
+    try:
+        from pathlib import Path
+
+        html_content = Path("docs/index.html").read_text()
+        return html_content, 200, {"Content-Type": "text/html"}
+    except Exception:
+        return "GitHub App for fixing commit messages is running"
 
 
 @app.route("/stats")
