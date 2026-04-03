@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Commit Messages</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.light {
+            background-color: white;
+            color: black;
+        }
+        body.dark {
+            background-color: black;
+            color: white;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        a {
+            color: inherit;
+        }
+    </style>
+</head>
+<body class="light">
+    <h1>Fix Commit Messages</h1>
+    <p>This GitHub App automatically cleans up commit messages by removing "add " prefixes from pushes to installed repositories.</p>
+
+    <h2>Install the App</h2>
+    <p><a href="https://github.com/apps/fixing-commits">Install Fix App</a> on your repository or organization.</p>
+
+    <h2>How It Works</h2>
+    <ul>
+        <li>Listens for push events.</li>
+        <li>Fixes commit messages (removes "add ").</li>
+        <li>Force-pushes changes.</li>
+        <li>Skips bot pushes to avoid loops.</li>
+    </ul>
+
+    <h2>Warning</h2>
+    <p>Rewrites Git history. Backup repos. Coordinate with team.</p>
+
+    <button onclick="toggleTheme()">Toggle Theme</button>
+
+    <script>
+        function toggleTheme() {
+            document.body.classList.toggle('light');
+            document.body.classList.toggle('dark');
+        }
+    </script>
+</body>
+</html>
