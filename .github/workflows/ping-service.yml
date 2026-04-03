@@ -10,4 +10,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping service
-        run: curl -s --fail https://fix.onrender.com || true
+        run: curl -s --fail https://fixing-commits.onrender.com || true
