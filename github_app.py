@@ -36,7 +36,7 @@ APP_ID = os.getenv("GITHUB_APP_ID")  # Set as environment variable
 PRIVATE_KEY = os.getenv("GITHUB_PRIVATE_KEY")  # Private key content as string
 WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")  # Webhook secret for verification
 
-webhook = Webhook(WEBHOOK_SECRET)
+webhook = Webhook(app, secret=WEBHOOK_SECRET)
 
 
 def run_command(
