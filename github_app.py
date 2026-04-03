@@ -2,19 +2,47 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
 import subprocess
 import sys
 import tempfile
-from typing import Any, Optional
+from pathlib import Path
+from typing import Any, Optional, Union
 
 from flask import Flask, jsonify, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from github import GithubIntegration
 from github_webhook import Webhook
+
+STATS_FILE = os.getenv("STATS_FILE", "stats.json")
+
+
+def load_stats() -> Union[dict[str, Any], Any]:
+    """Load stats from file."""
+    try:
+        return json.loads(Path(STATS_FILE).read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {"total_pushes": 0, "repos": {}}
+
+
+def save_stats(stats: dict[str, Any]) -> None:
+    """Save stats to file."""
+    Path(STATS_FILE).write_text(json.dumps(stats, indent=2))
+
+
+def increment_stats(repo_name: str) -> None:
+    """Increment push count for a repository."""
+    stats = load_stats()
+    stats["total_pushes"] = stats.get("total_pushes", 0) + 1
+    if repo_name not in stats["repos"]:
+        stats["repos"][repo_name] = {"pushes": 0}
+    stats["repos"][repo_name]["pushes"] = stats["repos"][repo_name].get("pushes", 0) + 1
+    save_stats(stats)
+
 
 app = Flask(__name__)
 
@@ -151,9 +179,14 @@ def handle_push() -> tuple[Any, int]:
         logger.error(f"Could not get installation token for {installation_id}")
         return jsonify({"error": "Could not get installation token"}), 500
 
+    # Extract repo name for stats
+    repo_name = repo.get("full_name", "")
+
     # Fix commit messages
     success = fix_commit_messages(repo_url, token, branch)
     if success:
+        if repo_name:
+            increment_stats(repo_name)
         logger.info(f"Successfully fixed commit messages for {repo_url} on {branch}")
         return jsonify({"status": "Commit messages fixed and pushed"}), 200
     else:
@@ -164,6 +197,13 @@ def handle_push() -> tuple[Any, int]:
 @app.route("/")
 def index() -> str:
     return "GitHub App for fixing commit messages is running"
+
+
+@app.route("/stats")
+def stats() -> tuple[Any, int]:
+    """Return push statistics."""
+    data = load_stats()
+    return jsonify(data), 200
 
 
 if __name__ == "__main__":
