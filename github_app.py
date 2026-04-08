@@ -170,9 +170,19 @@ echo "$commit_msg"
         first_bad = bad_hashes[0] if bad_hashes else "HEAD"
         cmd = f"git filter-branch -f --msg-filter '{filter_cmd}' {first_bad}..HEAD"
         ret, _, err = run_command(cmd, cwd=repo_path)
+        if ret != 0:
+            logger.warning(f"git filter-branch failed: {err}")
+            return False
+
+        # Push force
+        ret, _, err = run_command(f"git push --force origin {branch}", cwd=repo_path)
+        if ret != 0:
+            logger.error(f"Failed to push changes to {repo_url} on {branch}: {err}")
+            return False
+
+        return True @ app.route("/webhook", methods=["POST"])
 
 
-@app.route("/webhook", methods=["POST"])
 @limiter.limit("10 per minute")
 def handle_push() -> tuple[Any, int]:
     """Handle push webhook."""
