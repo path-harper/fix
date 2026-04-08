@@ -3,3 +3,8 @@
 Since releasing `v1.0.0`, we've significantly improved the app with stats tracking that shows total pushes and per-repo counts including skipped bot pushes at the `/stats` endpoint, added an improved documentation page with the stats URL, new logo icon, and screenshot example, and created a ping workflow that runs every 5 minutes to keep the Render service from suspending on the free tier. We also fixed a critical security issue by removing an exposed private key from git history using `git filter-repo`, properly set up the `test-repo` as a GitHub submodule with `.gitmodules` configuration, added type annotations to tests for better code quality, and updated the stats to track both user pushes and bot pushes separately. The app has gone through three releases: `v1.0.0` was the initial release, `v1.1.0` added stats tracking, and `v1.2.0` improved stats to include bot push tracking.
 
 Added `REDIS_URL` environment variable support in `v1.3.0` to persist stats across service restarts using Render Key Value, updated the app to serve `docs/index.html` directly at the root `/` endpoint with endpoints `/images/logo.png` and `/app-screenshot.png` to serve images, and simplified the install button text to be more concise.
+
+Fixed in `v1.4.0`:
+- Only rewrite new commits that have been pushed since the last run, rather than rewriting the entire branch history
+- Fixed test mocks to properly match function call count
+- Removed pycache from git tracking
