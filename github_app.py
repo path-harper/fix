@@ -137,7 +137,27 @@ def fix_commit_messages(repo_url: str, token: str, branch: str) -> bool:
             logger.error(f"Failed to checkout branch {branch} in {repo_url}: {err}")
             return False
 
-        # Run git filter-branch
+        # Get commits that are new compared to origin (only fix new commits)
+        ret, new_commits, _ = run_command(
+            f"git log --format=%H origin/{branch}..HEAD 2>/dev/null || echo ''",
+            cwd=repo_path,
+        )
+
+        if not new_commits.strip():
+            logger.info(f"No new commits to fix for {repo_url} on {branch}")
+            return True  # Nothing to do, but not an error
+
+        # Get list of commits that need fixing (contain " add " or start with "add ")
+        ret, bad_commits, _ = run_command(
+            f'git log --format=%H --grep=" add " -- {branch} | head -10 || echo ""',
+            cwd=repo_path,
+        )
+
+        if not bad_commits.strip():
+            logger.info(f"No commits need fixing in {repo_url} on {branch}")
+            return True
+
+        # Only rewrite the bad commits, not the entire branch
         filter_cmd = """
 commit_msg=$(cat);
 commit_msg=$(echo "$commit_msg" | sed "s/ add / /g");
@@ -146,21 +166,10 @@ commit_msg=$(echo "$commit_msg" | sed "s/^add //");
 commit_msg=$(echo "$commit_msg" | sed "s/^Add //");
 echo "$commit_msg"
 """
-        cmd = f"git filter-branch -f --msg-filter '{filter_cmd}' {branch}"
+        bad_hashes = bad_commits.strip().split("\n")
+        first_bad = bad_hashes[0] if bad_hashes else "HEAD"
+        cmd = f"git filter-branch -f --msg-filter '{filter_cmd}' {first_bad}..HEAD"
         ret, _, err = run_command(cmd, cwd=repo_path)
-        if ret != 0:
-            logger.warning(
-                f"git filter-branch failed for {repo_url} on {branch}: {err}",
-            )
-            return False
-
-        # Push force
-        ret, _, err = run_command(f"git push --force origin {branch}", cwd=repo_path)
-        if ret != 0:
-            logger.error(f"Failed to push changes to {repo_url} on {branch}: {err}")
-            return False
-
-        return True
 
 
 @app.route("/webhook", methods=["POST"])
