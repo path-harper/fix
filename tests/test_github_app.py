@@ -63,6 +63,8 @@ class TestFixCommitMessages:
         mock_run.side_effect = [
             (0, "", ""),  # clone
             (0, "", ""),  # checkout
+            (0, "abc123", ""),  # new commits check
+            (0, "abc123", ""),  # bad commits check
             (0, "", ""),  # filter-branch
             (0, "", ""),  # push
         ]
@@ -72,7 +74,7 @@ class TestFixCommitMessages:
             "main",
         )
         assert success is True
-        assert mock_run.call_count == 4
+        assert mock_run.call_count == 6
 
     @patch("github_app.run_command")
     def test_fix_commit_messages_clone_failure(self, mock_run: MagicMock) -> None:
@@ -89,6 +91,8 @@ class TestFixCommitMessages:
         mock_run.side_effect = [
             (0, "", ""),  # clone
             (0, "", ""),  # checkout
+            (0, "abc123", ""),  # new commits check
+            (0, "abc123", ""),  # bad commits check
             (0, "", ""),  # filter-branch
             (1, "", "push failed"),  # push
         ]

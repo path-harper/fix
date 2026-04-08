@@ -180,9 +180,10 @@ echo "$commit_msg"
             logger.error(f"Failed to push changes to {repo_url} on {branch}: {err}")
             return False
 
-        return True @ app.route("/webhook", methods=["POST"])
+        return True
 
 
+@app.route("/webhook", methods=["POST"])
 @limiter.limit("10 per minute")
 def handle_push() -> tuple[Any, int]:
     """Handle push webhook."""
