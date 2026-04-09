@@ -89,15 +89,16 @@ webhook = Webhook(app, secret=WEBHOOK_SECRET)
 
 
 def run_command(
-    cmd: str,
+    cmd: Union[str, list[str]],
     cwd: Optional[str] = None,
     env: Optional[dict] = None,
 ) -> tuple[int, str, str]:
-    """Run a shell command."""
+    """Run a command and capture output."""
     try:
+        use_shell = isinstance(cmd, str)
         result = subprocess.run(
             cmd,
-            shell=True,
+            shell=use_shell,  # noqa: S603
             capture_output=True,
             text=True,
             cwd=cwd,
@@ -119,12 +120,137 @@ def get_installation_token(installation_id: int) -> Optional[str]:
         return None
 
 
-def fix_commit_messages(repo_url: str, token: str, branch: str) -> bool:
+def normalize_commit_message(message: str) -> str:
+    cleaned = message.replace(" add ", " ").replace(" Add ", " ")
+    return re.sub(r"(?m)^(add|Add) ", "", cleaned)
+
+
+def git(repo_path: str, args: list[str]) -> tuple[int, str, str]:
+    return run_command(["git", *args], cwd=repo_path)
+
+
+def get_merge_base(
+    repo_path: str,
+    *,
+    branch: str,
+    default_branch: str,
+    repo_url: str,
+) -> Optional[str]:
+    ret, _, err = git(repo_path, ["fetch", "origin", default_branch])
+    if ret != 0:
+        logger.warning(f"Failed to fetch origin/{default_branch} for {repo_url}: {err}")
+        return None
+
+    ret, base_sha, err = git(
+        repo_path,
+        ["merge-base", "HEAD", f"origin/{default_branch}"],
+    )
+    if ret != 0 or not base_sha:
+        logger.warning(
+            f"Failed to find merge-base for {repo_url} ({branch} vs {default_branch}): {err}",
+        )
+        return None
+    return base_sha
+
+
+def list_commits(
+    repo_path: str,
+    *,
+    base_sha: str,
+    branch: str,
+    repo_url: str,
+) -> Optional[list[str]]:
+    ret, commit_list, err = git(
+        repo_path,
+        ["rev-list", "--reverse", f"{base_sha}..HEAD"],
+    )
+    if ret != 0:
+        logger.warning(f"Failed to list commits for {repo_url} on {branch}: {err}")
+        return None
+
+    return [c for c in commit_list.splitlines() if c.strip()]
+
+
+def commits_need_rewrite(
+    repo_path: str,
+    commits: list[str],
+    repo_url: str,
+) -> Optional[bool]:
+    for sha in commits:
+        ret, msg, err = git(repo_path, ["log", "-1", "--format=%B", sha])
+        if ret != 0:
+            logger.warning(f"Failed to read commit message {sha} for {repo_url}: {err}")
+            return None
+        if normalize_commit_message(msg) != msg:
+            return True
+    return False
+
+
+def write_msg_filter_script(repo_path: str) -> Path:
+    filter_script_path = Path(repo_path) / ".git" / "msg_filter.sh"
+    filter_script_path.parent.mkdir(parents=True, exist_ok=True)
+    filter_script_path.write_text(
+        """#!/usr/bin/env bash
+set -euo pipefail
+python3 - <<'PY'
+import re
+import sys
+
+msg = sys.stdin.read()
+msg = msg.replace(" add ", " ").replace(" Add ", " ")
+msg = re.sub(r"(?m)^(add|Add) ", "", msg)
+sys.stdout.write(msg)
+PY
+""",
+    )
+    filter_script_path.chmod(0o700)
+    return filter_script_path
+
+
+def rewrite_and_push(
+    repo_path: str,
+    *,
+    base_sha: str,
+    branch: str,
+    repo_url: str,
+) -> bool:
+    filter_script_path = write_msg_filter_script(repo_path)
+
+    ret, _, err = git(
+        repo_path,
+        [
+            "filter-branch",
+            "-f",
+            "--msg-filter",
+            str(filter_script_path),
+            "--",
+            f"{base_sha}..{branch}",
+        ],
+    )
+    if ret != 0:
+        logger.warning(f"git filter-branch failed for {repo_url} on {branch}: {err}")
+        return False
+
+    ret, _, err = git(repo_path, ["push", "--force-with-lease", "origin", branch])
+    if ret != 0:
+        logger.error(f"Failed to push changes to {repo_url} on {branch}: {err}")
+        return False
+
+    return True
+
+
+def fix_commit_messages(
+    repo_url: str,
+    token: str,
+    branch: str,
+    *,
+    default_branch: str,
+) -> bool:
     """Clone repo, fix commit messages, and push back."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Clone the repo using token
         clone_url = repo_url.replace("https://", f"https://x-access-token:{token}@")
-        ret, _, err = run_command(f"git clone {clone_url} repo", cwd=temp_dir)
+        ret, _, err = run_command(["git", "clone", clone_url, "repo"], cwd=temp_dir)
         if ret != 0:
             logger.error(f"Failed to clone repo {repo_url}: {err}")
             return False
@@ -132,35 +258,52 @@ def fix_commit_messages(repo_url: str, token: str, branch: str) -> bool:
         repo_path = os.path.join(temp_dir, "repo")
 
         # Checkout the branch
-        ret, _, err = run_command(f"git checkout {branch}", cwd=repo_path)
+        ret, _, err = git(repo_path, ["checkout", branch])
         if ret != 0:
             logger.error(f"Failed to checkout branch {branch} in {repo_url}: {err}")
             return False
 
-        # Run git filter-branch
-        filter_cmd = """
-commit_msg=$(cat);
-commit_msg=$(echo "$commit_msg" | sed "s/ add / /g");
-commit_msg=$(echo "$commit_msg" | sed "s/ Add / /g");
-commit_msg=$(echo "$commit_msg" | sed "s/^add //");
-commit_msg=$(echo "$commit_msg" | sed "s/^Add //");
-echo "$commit_msg"
-"""
-        cmd = f"git filter-branch -f --msg-filter '{filter_cmd}' {branch}"
-        ret, _, err = run_command(cmd, cwd=repo_path)
-        if ret != 0:
-            logger.warning(
-                f"git filter-branch failed for {repo_url} on {branch}: {err}",
+        if branch == default_branch:
+            logger.info(
+                f"Skipping commit-message rewriting on default branch {default_branch}",
             )
+            return True
+
+        base_sha = get_merge_base(
+            repo_path,
+            branch=branch,
+            default_branch=default_branch,
+            repo_url=repo_url,
+        )
+        if not base_sha:
             return False
 
-        # Push force
-        ret, _, err = run_command(f"git push --force origin {branch}", cwd=repo_path)
-        if ret != 0:
-            logger.error(f"Failed to push changes to {repo_url} on {branch}: {err}")
+        commits = list_commits(
+            repo_path,
+            base_sha=base_sha,
+            branch=branch,
+            repo_url=repo_url,
+        )
+        if commits is None:
             return False
 
-        return True
+        if not commits:
+            return True
+
+        needs_rewrite = commits_need_rewrite(repo_path, commits, repo_url)
+        if needs_rewrite is None:
+            return False
+
+        if not needs_rewrite:
+            logger.info(f"No commit messages to rewrite for {repo_url} on {branch}")
+            return True
+
+        return rewrite_and_push(
+            repo_path,
+            base_sha=base_sha,
+            branch=branch,
+            repo_url=repo_url,
+        )
 
 
 @app.route("/webhook", methods=["POST"])
@@ -184,6 +327,7 @@ def handle_push() -> tuple[Any, int]:
 
     repo = data.get("repository", {})
     repo_url = repo.get("clone_url")
+    default_branch = repo.get("default_branch", "main")
     branch = data.get("ref", "").replace("refs/heads/", "")
     installation_id = data.get("installation", {}).get("id")
 
@@ -212,7 +356,12 @@ def handle_push() -> tuple[Any, int]:
         increment_stats(repo_name)
 
     # Fix commit messages
-    success = fix_commit_messages(repo_url, token, branch)
+    success = fix_commit_messages(
+        repo_url,
+        token,
+        branch,
+        default_branch=default_branch,
+    )
     if success:
         if repo_name:
             increment_stats(repo_name)

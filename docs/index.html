@@ -172,7 +172,7 @@
         <p class="tagline">Auto-cleanup for commit messages</p>
 
         <p class="description">
-            Automatically removes "add" prefixes from commit messages when you push. Keep your git history clean without the manual work.
+            Automatically removes "add" prefixes from commit messages when you push. Only rewrites commit messages when a change is needed, and targets commits unique to your branch (relative to the repo default branch).
         </p>
 
         <a class="btn" href="https://github.com/apps/fixing-commits">
@@ -184,16 +184,17 @@
             <ul>
                 <li>Listens for push events</li>
                 <li>Fixes commit messages</li>
-                <li>Force-pushes changes</li>
+                <li>Skips rewriting the default branch</li>
+                <li>Uses force-with-lease when pushing</li>
                 <li>Skips bot pushes</li>
             </ul>
         </div>
 
         <div class="warning">
-            ⚠️ Rewrites git history. Use with caution on shared branches.
+            ⚠️ May rewrite branch history to fix commit messages. Avoid installing on shared branches and be cautious if others are collaborating on the same branch.
         </div>
 
-<div class="stats-link">
+        <div class="stats-link">
             <a href="https://fixing-commits.onrender.com/stats">View stats →</a>
         </div>
     </div>

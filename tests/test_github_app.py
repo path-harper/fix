@@ -63,16 +63,21 @@ class TestFixCommitMessages:
         mock_run.side_effect = [
             (0, "", ""),  # clone
             (0, "", ""),  # checkout
+            (0, "", ""),  # fetch default branch
+            (0, "base_sha", ""),  # merge-base
+            (0, "c1\n", ""),  # rev-list
+            (0, "Add foo", ""),  # log message (needs rewrite)
             (0, "", ""),  # filter-branch
             (0, "", ""),  # push
         ]
         success = fix_commit_messages(
             "https://github.com/user/repo.git",
             "token",
-            "main",
+            "feature",
+            default_branch="main",
         )
         assert success is True
-        assert mock_run.call_count == 4
+        assert mock_run.call_count == 8
 
     @patch("github_app.run_command")
     def test_fix_commit_messages_clone_failure(self, mock_run: MagicMock) -> None:
@@ -80,7 +85,8 @@ class TestFixCommitMessages:
         success = fix_commit_messages(
             "https://github.com/user/repo.git",
             "token",
-            "main",
+            "feature",
+            default_branch="main",
         )
         assert success is False
 
@@ -89,13 +95,18 @@ class TestFixCommitMessages:
         mock_run.side_effect = [
             (0, "", ""),  # clone
             (0, "", ""),  # checkout
+            (0, "", ""),  # fetch default branch
+            (0, "base_sha", ""),  # merge-base
+            (0, "c1\n", ""),  # rev-list
+            (0, "Add foo", ""),  # log message (needs rewrite)
             (0, "", ""),  # filter-branch
             (1, "", "push failed"),  # push
         ]
         success = fix_commit_messages(
             "https://github.com/user/repo.git",
             "token",
-            "main",
+            "feature",
+            default_branch="main",
         )
         assert success is False
 
@@ -105,7 +116,10 @@ class TestWebhook:
         with app.test_client() as client:
             data: dict[str, Any] = {
                 "sender": {"type": "Bot"},
-                "repository": {"clone_url": "https://github.com/user/repo.git"},
+                "repository": {
+                    "clone_url": "https://github.com/user/repo.git",
+                    "default_branch": "main",
+                },
                 "ref": "refs/heads/main",
                 "installation": {"id": 123},
             }
@@ -125,7 +139,10 @@ class TestWebhook:
         with app.test_client() as client:
             data = {
                 "sender": {"type": "User"},
-                "repository": {"clone_url": "https://github.com/user/repo.git"},
+                "repository": {
+                    "clone_url": "https://github.com/user/repo.git",
+                    "default_branch": "main",
+                },
                 "ref": "refs/heads/main",
                 "installation": {"id": 123},
             }
@@ -146,7 +163,10 @@ class TestWebhook:
         with app.test_client() as client:
             data = {
                 "sender": {"type": "User"},
-                "repository": {"clone_url": "https://github.com/user/repo.git"},
+                "repository": {
+                    "clone_url": "https://github.com/user/repo.git",
+                    "default_branch": "main",
+                },
                 "ref": "refs/heads/main",
                 "installation": {"id": 123},
             }
@@ -166,7 +186,10 @@ class TestWebhook:
         with app.test_client() as client:
             data = {
                 "sender": {"type": "User"},
-                "repository": {"clone_url": "https://github.com/user/repo.git"},
+                "repository": {
+                    "clone_url": "https://github.com/user/repo.git",
+                    "default_branch": "main",
+                },
                 "ref": "refs/heads/main",
                 "installation": {"id": 123},
             }
