@@ -5,121 +5,197 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fix Commit Messages</title>
     <style>
-        :root {
-            --bg: #ffffff;
-            --text: #1a1a1a;
-            --text-secondary: #666666;
-            --accent: #0969da;
-            --border: #d0d7de;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        @media (prefers-color-scheme: dark) {
+        :root {
+            --bg: #0a0a0a;
+            --surface: #161616;
+            --text: #fafafa;
+            --text-muted: #737373;
+            --accent: #22c55e;
+            --accent-hover: #16a34a;
+            --border: #262626;
+        }
+
+        @media (prefers-color-scheme: light) {
             :root {
-                --bg: #111111;
-                --text: #e6e6e6;
-                --text-secondary: #8b949e;
-                --accent: #58a6ff;
-                --border: #30363d;
+                --bg: #fafafa;
+                --surface: #ffffff;
+                --text: #171717;
+                --text-muted: #737373;
+                --accent: #16a34a;
+                --accent-hover: #15803d;
+                --border: #e5e5e5;
             }
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 40px 20px;
+            font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             background: var(--bg);
             color: var(--text);
-            line-height: 1.6;
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 420px;
+            width: 100%;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 24px;
         }
 
         h1 {
-            font-size: 1.75rem;
-            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
             margin-bottom: 8px;
         }
 
         .tagline {
-            text-align: center;
-            color: var(--text-secondary);
-            margin-bottom: 30px;
+            color: var(--text-muted);
+            font-size: 15px;
+            margin-bottom: 32px;
         }
 
-        h2 {
-            font-size: 1.1rem;
-            margin-top: 30px;
-            margin-bottom: 10px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 8px;
+        .description {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 32px;
+            padding: 16px;
+            background: var(--surface);
+            border-radius: 8px;
+            border: 1px solid var(--border);
         }
 
-        a {
-            color: var(--accent);
-            text-decoration: none;
-        }
-
-        ul {
-            padding-left: 20px;
-            color: var(--text-secondary);
-        }
-
-        li {
-            margin-bottom: 6px;
-        }
-
-        .install-btn {
-            display: inline-block;
-            padding: 6px 16px;
-            border-radius: 6px;
-            background: #0969da;
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px 20px;
+            background: var(--accent);
             color: white;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 500;
+            text-align: center;
             text-decoration: none;
-            border: 1px solid rgba(27, 31, 36, 0.15);
+            border-radius: 8px;
+            transition: background 0.2s, transform 0.1s;
         }
 
-        .install-btn:hover {
-            background: #0757a8;
+        .btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .features {
+            margin-top: 40px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+        }
+
+        .features h2 {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+
+        .features ul {
+            list-style: none;
+        }
+
+        .features li {
+            font-size: 13px;
+            color: var(--text-muted);
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .features li:last-child {
+            border-bottom: none;
+        }
+
+        .features li::before {
+            content: "✓";
+            color: var(--accent);
+            font-size: 12px;
         }
 
         .warning {
-            color: #cf222e;
-            font-size: 0.9rem;
+            margin-top: 32px;
+            padding: 12px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 6px;
+            font-size: 12px;
+            color: #ef4444;
+        }
+
+        .stats-link {
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        .stats-link a {
+            color: var(--text-muted);
+            font-size: 12px;
+            text-decoration: underline;
         }
     </style>
 </head>
 
 <body>
+    <div class="container">
+        <img src="images/logo.png" alt="Fix" class="logo">
 
-<img src="images/logo.png" alt="Fix Commit Messages" style="width: 120px; display: block; margin: 0 auto 20px;">
+        <h1>Fix</h1>
+        <p class="tagline">Auto-cleanup for commit messages</p>
 
-<h1>Fix Commit Messages</h1>
-<p class="tagline">Auto-cleanup for commit messages</p>
+        <p class="description">
+            Automatically removes "add" prefixes from commit messages when you push. Keep your git history clean without the manual work.
+        </p>
 
-<p>This GitHub App automatically removes "add " or "Add " prefixes from commit messages on push.</p>
+        <a class="btn" href="https://github.com/apps/fixing-commits">
+            Install App
+        </a>
 
-<h2>Install</h2>
-<a class="install-btn" href="https://github.com/apps/fixing-commits">
-    Fix App
-</a>
+        <div class="features">
+            <h2>How it works</h2>
+            <ul>
+                <li>Listens for push events</li>
+                <li>Fixes commit messages</li>
+                <li>Force-pushes changes</li>
+                <li>Skips bot pushes</li>
+            </ul>
+        </div>
 
-<h2>How It Works</h2>
-<ul>
-    <li>Listens for push events</li>
-    <li>Fixes commit messages</li>
-    <li>Force-pushes changes</li>
-    <li>Skips bot pushes</li>
-</ul>
+        <div class="warning">
+            ⚠️ Rewrites git history. Use with caution on shared branches.
+        </div>
 
-<h2>Example</h2>
-<img src="app-screenshot.png" alt="Screenshot of app fixing commits" style="max-width: 100%; border: 1px solid var(--border); border-radius: 6px;">
-
-<h2>Stats</h2>
-<p>View push statistics at: <a href="https://fixing-commits.onrender.com/stats">https://fixing-commits.onrender.com/stats</a></p>
-
-<h2>Warning</h2>
-<p class="warning">Rewrites Git history. Backup your repos first.</p>
-
+<div class="stats-link">
+            <a href="https://fixing-commits.onrender.com/stats">View stats →</a>
+        </div>
+    </div>
 </body>
 </html>
