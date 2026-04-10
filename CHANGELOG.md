@@ -4,13 +4,14 @@ Since releasing `v1.0.0`, we've significantly improved the app with stats tracki
 
 Added `REDIS_URL` environment variable support in `v1.3.0` to persist stats across service restarts using Render Key Value, updated the app to serve `docs/index.html` directly at the root `/` endpoint with endpoints `/images/logo.png` and `/app-screenshot.png` to serve images, and simplified the install button text to be more concise.
 
-## Unreleased (2026-04-10)
+## v1.5.0 (2026-04-10)
 
 - Reduce PR branch history rewriting by only rewriting commit messages when a change is needed, and only for commits unique to the pushed branch (relative to the repository default branch).
 - Skip rewriting the repository default branch entirely.
 - Push rewritten history using `--force-with-lease` instead of `--force`.
 - Update docs and webpage copy to reflect the safer behavior.
 - Untrack accidentally committed `__pycache__/*.pyc` files.
+- Fix empty commit message issue by using Python directly in filter script instead of bash-wrapped heredoc.
 
 ## v1.4.0 (2026-04-09)
 
