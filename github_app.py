@@ -190,17 +190,16 @@ def write_msg_filter_script(repo_path: str) -> Path:
     filter_script_path = Path(repo_path) / ".git" / "msg_filter.sh"
     filter_script_path.parent.mkdir(parents=True, exist_ok=True)
     filter_script_path.write_text(
-        """#!/usr/bin/env bash
-set -euo pipefail
-python3 - <<'PY'
+        """#!/usr/bin/env python3
 import re
 import sys
 
 msg = sys.stdin.read()
+if not msg:
+    sys.exit(0)
 msg = msg.replace(" add ", " ").replace(" Add ", " ")
 msg = re.sub(r"(?m)^(add|Add) ", "", msg)
 sys.stdout.write(msg)
-PY
 """,
     )
     filter_script_path.chmod(0o700)
